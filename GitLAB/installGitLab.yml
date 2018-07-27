@@ -17,7 +17,7 @@
       yum install --downloadonly --downloaddir=/Install/repo/GitLab curl policycoreutils-python openssh-server gitlab-ee
 
 - name: Ejecutar esta tarea en el servidor GitLab
-  hosts: ecbplxoct14
+  hosts: servidor-externo
   become: yes
   tasks:
 
