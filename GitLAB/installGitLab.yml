@@ -32,7 +32,7 @@
       yum localinstall *.rpm -y
       sudo firewall-cmd --permanent --add-service=http
       sudo systemctl reload firewalld
-      sudo external_url "http://10.60.144.72/gitlab"
+      sudo external_url "http://IP.ADD.SRV.GIT/gitlab"
       sudo gitlab-ctl reconfigure
       sudo gitlab-ctl restart
   
