@@ -1,0 +1,111 @@
+---
+## Pasos para realizar el Hardening en Tomcat 8
+
+- hosts: dbs-services
+  gather_facts: false
+  tasks:
+  - name: Eliminar archivos innecesarios de $CATALINA_HOME/webapps
+    file:
+      path: /opt/tomcat-SERVICES/webapps/{{ item }}
+      state: absent
+    with_items:
+       - ROOT
+       - docs
+       - examples
+       - host-manager
+       - manager
+
+  - name: Deshabilitar el puerto y valor SHUTDOWN por NONDETERMINISTIC
+    replace:
+       dest: /opt/tomcat-SERVICES/conf/server.xml
+       regexp: '<Server port="*" shutdown="SHUTDOWN">'
+       replace: '<Server port="-1" shutdown="SINDETERMINAR">'
+       backup: yes
+       owner: java
+
+  - name: Restringir autodeploy de las aplicaciones
+    replace:
+        path: /opt/tomcat-SERVICES/conf/server.xml
+        regexp: 'autoDeploy="true"'
+        replace: 'autoDeploy="false"'
+
+  - name: Configuracion de connector Tomcat 8
+    blockinfile:
+        dest: /opt/tomcat-SERVICES/conf/server.xml
+        marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
+        insertbefore: '    <!-- A "Connector" using the shared thread pool-->'
+        block: |
+            <Connector port="8080" protocol="HTTP/1.1"
+               connectionTimeout="20000"
+               redirectPort="8443" />
+
+
+
+  - name:  Permisos de los Archivos $CATALINA_HOME
+    file:
+        path: /opt/tomcat-SERVICES
+        owner: java
+        group: java
+        mode: "g-w,o-rwx"
+        recurse: yes
+
+  - name: Permisos de los archivos Log de Tomcat
+    file:
+        path: /opt/tomcat-SERVICES/logs
+        mode: "o-rwx"
+
+  - name: Configurar tamaño de logs logging.properties
+    lineinfile:
+        path: /opt/tomcat-SERVICES/conf/logging.properties
+        line: "java.util.logging.FileHandler.limit=10000"
+        owner: java
+        backup: yes
+
+  - name: Configuracion de setenv.sh
+    lineinfile:
+        dest: "{{ item.dest }}"
+        line: "{{ item.line }}"
+        backup: yes
+    with_items:
+        - {dest: '/opt/tomcat-SERVICES/bin/setenv.sh', line: 'export JAVA_OPTS="$JAVA_OPTS -Dorg.apache.catalina.connector.RECYCLE_FACADES=true"'}
+        - {dest: '/opt/tomcat-SERVICES/bin/setenv.sh', line: 'export JAVA_OPTS="$JAVA_OPTS -Dorg.apache.catalina.STRICT_SERVLET_COMPLIANCE=true"'}
+        - {dest: '/opt/tomcat-SERVICES/bin/setenv.sh', line: 'export JAVA_OPTS="$JAVA_OPTS -Dorg.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH=false"'}
+        - {dest: '/opt/tomcat-SERVICES/bin/setenv.sh', line: 'export JAVA_OPTS="$JAVA_OPTS -Dorg.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH=false"'}
+        - {dest: '/opt/tomcat-SERVICES/bin/setenv.sh', line: 'export JAVA_OPTS="$JAVA_OPTS -Dorg.apache.coyote.USE_CUSTOM_STATUS_MSG_IN_HEADER=false"'}
+
+  - name: Modificar Java Virtual Machine Tomcat
+    replace:
+        path: /opt/tomcat-SERVICES/bin/setenv.sh
+        regexp: '-Xmx512m'
+        replace: '-Xmx2048m'
+
+  - name: Modificar Context para HttpOnly
+    replace:
+        path: /opt/tomcat-SERVICES/conf/context.xml
+        regexp: '^<Context>'
+        replace: '<Context useHttpOnly="true">'
+        backup: yes
+
+  - name: Agregar configuracion VALVE a context.xml
+    lineinfile:
+        path: /opt/tomcat-SERVICES/conf/context.xml
+        line: '    <Valve className="org.apache.catalina.valves.AccessLogValve" directory="$CATALINA_HOME/logs/" prefix="access_log" fileDateFormat="yyyy-MM-dd.HH" suffix=".log" pattern="%t %H cookie:%{SESSIONID}c request:%{SESSIONID}r %m %U %s %q %r" />'
+        insertbefore: '</Context>'
+        backup: yes
+        state: present
+
+  - name: Set JAVA_HOME de los tomcat
+    copy:
+       dest: /etc/profile.d/jdkenv.sh
+       content: |
+          export JAVA_HOME=/usr/java/jdk1.8.0_161
+          export CATALINA_HOME=/opt/tomcat-SERVICES
+          export PATH=$JAVA_HOME/bin:$PATH
+
+  - name: Reinicar Tomcat 8
+    shell: |
+        systemctl stop tomcat8-SERVICES.service
+        sleep 10
+        systemctl start tomcat8-SERVICES.service
+#        /opt/tomcat-SERVICES/bin/startup start -security
+#        /opt/tomcat-SERVICES/bin/catalina.sh start -security
