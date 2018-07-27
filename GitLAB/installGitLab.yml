@@ -1,0 +1,48 @@
+---
+## Instalacion de GitLab
+
+- name: Ejecutar esta tarea en el servidor local
+  hosts: 127.0.0.1
+  connection: local
+  become: yes
+  tasks:
+
+  - name: Verificar nombre de host
+    command: hostname
+
+  - name: Descarga de Software de instalacion GitLab
+    shell: |
+      mkdir /Install/repo/GitLab
+      curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.rpm.sh | sudo bash
+      yum install --downloadonly --downloaddir=/Install/repo/GitLab curl policycoreutils-python openssh-server gitlab-ee
+
+- name: Ejecutar esta tarea en el servidor GitLab
+  hosts: ecbplxoct14
+  become: yes
+  tasks:
+
+  - name: Copiar los instaladores al servidor GitLab
+    copy:
+      src: /Install/repo/GitLab
+      dest: /logs/install
+
+  - name: Ejecutar los instaladores en el servidor GitLab
+    shell: |
+      cd /logs/install/GitLab
+      yum localinstall *.rpm -y
+      sudo firewall-cmd --permanent --add-service=http
+      sudo systemctl reload firewalld
+      sudo external_url "http://10.60.144.72/gitlab"
+      sudo gitlab-ctl reconfigure
+      sudo gitlab-ctl restart
+  
+  - name: Configurar Storing Git en otro directorio
+    lineinfile:
+      path: /etc/gitlab/gitlab.rb
+      line: "git_data_dirs({ "default" => { "path" => "/gitlab/git-data" } })"
+      backup: yes
+
+  - name: Reiniciar servicios GitLab
+    shell: |
+      sudo gitlab-ctl reconfigure
+      sudo gitlab-ctl restart
