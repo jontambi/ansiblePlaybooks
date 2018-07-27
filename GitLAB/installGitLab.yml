@@ -32,10 +32,15 @@
       yum localinstall *.rpm -y
       sudo firewall-cmd --permanent --add-service=http
       sudo systemctl reload firewalld
-      sudo external_url "http://IP.ADD.SRV.GIT/gitlab"
-      sudo gitlab-ctl reconfigure
-      sudo gitlab-ctl restart
-  
+
+  - name: Configurar URL de GitLab
+    replace:
+      dest: /etc/gitlab/gitlab.rb
+      regexp: "external_url 'http://gitlab.example.com'"
+      replace: 'external_url "http://10.60.144.72"'
+      backup: yes
+
+        
   - name: Configurar Storing Git en otro directorio
     lineinfile:
       path: /etc/gitlab/gitlab.rb
