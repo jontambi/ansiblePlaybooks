@@ -35,11 +35,9 @@
         marker: "<!-- {mark} ANSIBLE MANAGED BLOCK -->"
         insertbefore: '    <!-- A "Connector" using the shared thread pool-->'
         block: |
-            <Connector port="8080" protocol="HTTP/1.1"
-               connectionTimeout="20000"
-               redirectPort="8443" />
-
-
+            <Connector port="8090" protocol="HTTP/1.1"
+               connectionTimeout="300" maxThreads="256" maxSpareThreads="100" KeepAlive="1" KeepAliveTimeout="15"
+               redirectPort="8445" />
 
   - name:  Permisos de los Archivos $CATALINA_HOME
     file:

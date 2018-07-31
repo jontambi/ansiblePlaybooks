@@ -1,0 +1,34 @@
+{
+	"variables": {
+		"name": "CentOS7_x86_64",
+		"source_ami": "ami-d5bf2caa",
+		"aws_access_key": "",
+		"aws_secret_key": "",
+		"region": "us-east-2",
+    },
+
+    "builders": [{
+    	"type": "amazon-ebs",
+    	"aws_access_key": "{{user `aws_access_key`}}",
+    	"aws_secret_key": "{{user `aws_secret_key`}}",
+    	"ami_name": "{{user `name`}}",
+    	"region": "{{user `region`}}",
+    	"source_ami": "{{user `source_ami`}}",
+    	"ami_description": "CentOS7_x86_64 with NGINX",
+    	"instance_type": "t2.micro",
+    	"communicator": "ssh",
+    	"ssh_username": "tux",
+    	"run_tags": {"Name": "packer-image"}
+    }],
+
+	"provisioners": [
+		{
+			"type": "shell",
+			"inline": "sudo yum install -y epel-release"
+		},
+		{
+			"type": "shell",
+			"inline": ["sudo yum install -y nginx", "sudo systemctl enable nginx", "sudo systemctl start nginx"]
+		}
+	]
+}
