@@ -1,0 +1,32 @@
+{
+    "variables": {
+        "aws_access_key": "",
+        "aws_secret_key": ""
+    },
+    "builders": [
+        {
+            "type": "amazon-ebs",
+            "access_key": "{{user `aws_access_key`}}",
+            "secret_key": "{{user `aws_secret_key`}}",
+            "region": "us-east-2",
+            "source_ami": "ami-5e8bb23b",
+            "instance_type": "t2.micro",
+            "ami_name": "packer-Ubuntu-01",
+            "ami_description": "Ubuntu_x86_64 with NGINX",
+            "ssh_username": "ubuntu",
+            "run_tags": {
+                "Name": "Packer-Image-Ubuntu_16.04-x86_64"
+            }
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "shell",
+            "script": "scripts/python.sh"
+        },
+        {
+             "type": "ansible",
+             "playbook_file": "ansible/playbook.yml",
+        }
+    ]
+}
