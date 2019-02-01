@@ -1,0 +1,41 @@
+---
+
+- name: Agregar Repositorio Local
+  yum_repository:
+        name: RHEL76-Server-InstallMedia
+        description: Local Repository for Red Hat Enterprise Linux 7.6 Server
+        baseurl: "http://192.168.1.10:9080/rhel76"
+        gpgkey: file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+        gpgcheck: no 
+        enabled: yes
+
+- name: Limpiar metadata
+  command: yum clean metadata
+  args:
+    warn: no
+
+- name: Actualizar todos los RPMs
+  yum:
+      name: '*'
+      state: latest
+
+- name: Habilitar version de Kernel nueva
+  replace:
+      dest: /etc/default/grub 
+      regexp: 'GRUB_DEFAULT=saved'
+      replace: 'GRUB_DEFAULT=0'
+      backup: yes
+
+- name: Re-configurar Kernel Configuration
+  shell: |
+      cp -p /boot/grub2/grub.cfg /boot/grub2/grub.cfg.ORI
+      grub2-mkconfig -o /boot/grub2/grub.cfg
+
+- name: Restart Linux Server
+  reboot:
+    test_command: hostnamectl  
+  register: output
+
+- name: Mostrar Resultado
+  debug: 
+    msg: "{{ output }}"

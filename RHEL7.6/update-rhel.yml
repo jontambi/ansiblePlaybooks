@@ -1,0 +1,8 @@
+---
+- name: Upgrade RHEL 7.2 a RHEL 7.6
+  hosts: serverName
+  remote_user: usdeploy
+  become: yes
+
+  roles:
+    - role: updates
